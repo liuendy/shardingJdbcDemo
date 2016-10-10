@@ -10,12 +10,11 @@ import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
  */
 public class H2DataSourceFactory {
 
-    public javax.sql.DataSource getDataSource() {
+    public static javax.sql.DataSource getDataSource(String dataBaseName ,String sqlPath) {
 
         EmbeddedDatabaseBuilder databaseBuilder = new EmbeddedDatabaseBuilder()
                 .setType(EmbeddedDatabaseType.H2);
 
-        String sqlPath = "schema.sql" ;
         databaseBuilder.addScripts(sqlPath);
         //ExportSchemaUtil.export(dataSource);
         return databaseBuilder.build() ;
