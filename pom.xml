@@ -8,6 +8,7 @@
     <modules>
 
         <module>jdbc-demo</module>
+        <module>jdbc-base</module>
     </modules>
     
     <properties>
@@ -116,7 +117,7 @@
                 <artifactId>hibernate-entitymanager</artifactId>
                 <version>${hibernate.version}</version>
             </dependency>-->
-            <!--<dependency>
+            <dependency>
                 <groupId>org.springframework</groupId>
                 <artifactId>spring-context</artifactId>
                 <version>${springframework.version}</version>
@@ -145,7 +146,7 @@
                 <groupId>org.springframework</groupId>
                 <artifactId>spring-tx</artifactId>
                 <version>${springframework.version}</version>
-            </dependency>-->
+            </dependency>
         </dependencies>
     </dependencyManagement>
     
