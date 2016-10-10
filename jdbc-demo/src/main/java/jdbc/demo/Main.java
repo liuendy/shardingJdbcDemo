@@ -1,5 +1,6 @@
 package jdbc.demo;
 
+import com.dangdang.ddframe.rdb.sharding.api.HintManager;
 import com.dangdang.ddframe.rdb.sharding.api.rule.BindingTableRule;
 import com.dangdang.ddframe.rdb.sharding.api.rule.DataSourceRule;
 import com.dangdang.ddframe.rdb.sharding.api.rule.ShardingRule;
@@ -8,8 +9,13 @@ import com.dangdang.ddframe.rdb.sharding.api.strategy.database.DatabaseShardingS
 import com.dangdang.ddframe.rdb.sharding.api.strategy.table.TableShardingStrategy;
 import com.dangdang.ddframe.rdb.sharding.jdbc.ShardingDataSource;
 import sharding.jdbc.datasource.factory.H2DataSourceFactory;
+import sharding.jdbc.sharing.strategy.ModuloDatabaseShardingAlgorithm;
+import sharding.jdbc.sharing.strategy.ModuloTableShardingAlgorithm;
 
 import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -27,11 +33,11 @@ public class Main {
 
         // CHECKSTYLE:ON
         DataSource dataSource = getShardingDataSource();
-        /*printSimpleSelect(dataSource);
+        printSimpleSelect(dataSource);
         System.out.println("--------------");
         printGroupBy(dataSource);
         System.out.println("--------------");
-        printHintSimpleSelect(dataSource);*/
+        printHintSimpleSelect(dataSource);
     }
 
     private static Map<String, DataSource> createDataSourceMap() {
@@ -50,6 +56,54 @@ public class Main {
                 .databaseShardingStrategy(new DatabaseShardingStrategy("user_id", new ModuloDatabaseShardingAlgorithm()))
                 .tableShardingStrategy(new TableShardingStrategy("order_id", new ModuloTableShardingAlgorithm())).build();
         return new ShardingDataSource(shardingRule);
+    }
+
+    private static void printSimpleSelect(final DataSource dataSource) throws SQLException {
+        String sql = "SELECT i.* FROM t_order o JOIN t_order_item i ON o.order_id=i.order_id WHERE o.user_id=? AND o.order_id=?";
+        try (
+                Connection conn = dataSource.getConnection();
+                PreparedStatement preparedStatement = conn.prepareStatement(sql)) {
+            preparedStatement.setInt(1, 10);
+            preparedStatement.setInt(2, 1001);
+            try (ResultSet rs = preparedStatement.executeQuery()) {
+                while (rs.next()) {
+                    System.out.println(rs.getInt(1));
+                    System.out.println(rs.getInt(2));
+                    System.out.println(rs.getInt(3));
+                }
+            }
+        }
+    }
+
+    private static void printGroupBy(final DataSource dataSource) throws SQLException {
+        String sql = "SELECT o.user_id, COUNT(*) FROM t_order o JOIN t_order_item i ON o.order_id=i.order_id GROUP BY o.user_id";
+        try (
+                Connection conn = dataSource.getConnection();
+                PreparedStatement preparedStatement = conn.prepareStatement(sql)
+        ) {
+            ResultSet rs = preparedStatement.executeQuery();
+            while (rs.next()) {
+                System.out.println("user_id: " + rs.getInt(1) + ", count: " + rs.getInt(2));
+            }
+        }
+    }
+
+    private static void printHintSimpleSelect(final DataSource dataSource) throws SQLException {
+        String sql = "SELECT i.* FROM t_order o JOIN t_order_item i ON o.order_id=i.order_id";
+        try (
+                HintManager hintManager = HintManager.getInstance();
+                Connection conn = dataSource.getConnection();
+                PreparedStatement preparedStatement = conn.prepareStatement(sql)) {
+            hintManager.addDatabaseShardingValue("t_order", "user_id", 10);
+            hintManager.addTableShardingValue("t_order", "order_id", 1001);
+            try (ResultSet rs = preparedStatement.executeQuery()) {
+                while (rs.next()) {
+                    System.out.println(rs.getInt(1));
+                    System.out.println(rs.getInt(2));
+                    System.out.println(rs.getInt(3));
+                }
+            }
+        }
     }
 
 }
